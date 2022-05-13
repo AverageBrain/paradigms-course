@@ -6,6 +6,7 @@ import expression.common.Reason;
 import expression.parser.ParserTestSet;
 import expression.parser.ParserTester;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
@@ -14,7 +15,7 @@ import java.util.function.LongUnaryOperator;
  * @author Georgiy Korneev (kgeorgiy@kgeorgiy.info)
  */
 public class ExceptionsTester extends ParserTester {
-    /* package-private */ final List<Op<String>> parsingTest = list(
+    /* package-private */ final List<Op<String>> parsingTest = new ArrayList<>(List.of(
             Op.of("No first argument", "* y * z"),
             Op.of("No middle argument", "x *  * z"),
             Op.of("No last argument", "x * y * "),
@@ -33,10 +34,10 @@ public class ExceptionsTester extends ParserTester {
             Op.of("Bare a", "a"),
             Op.of("(())", "(())"),
             Op.of("Spaces in numbers", "10 20")
-    );
+    ));
 
-    public ExceptionsTester(final TestCounter counter, final int mode) {
-        super(counter, mode);
+    public ExceptionsTester(final TestCounter counter) {
+        super(counter);
     }
 
 

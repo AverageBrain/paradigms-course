@@ -31,7 +31,7 @@ public interface Expression extends ToMiniString {
         return new Const(c);
     }
 
-    static ExpressionTester<?, ?> tester(final TestCounter counter, final int mode) {
+    static ExpressionTester<?, ?> tester(final TestCounter counter) {
         final Subtract example = new Subtract(
                 new Multiply(new Const(2), new Variable("x")),
                 new Const(3)
@@ -51,7 +51,7 @@ public interface Expression extends ToMiniString {
 
         //noinspection Convert2MethodRef
         return new ExpressionTester<>(
-                counter, mode, KIND, c -> x -> c,
+                counter, KIND, c -> x -> c,
                 (op, a, b) -> x -> op.apply(a.evaluate(x), b.evaluate(x)),
                 (a, b) -> a + b, (a, b) -> a - b, (a, b) -> a * b, (a, b) -> a / b
         )

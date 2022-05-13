@@ -31,13 +31,13 @@ public interface TripleExpression extends ToMiniString {
         return Expression.TYPE.constant(c);
     }
 
-    static ExpressionTester<?, ?> tester(final TestCounter counter, final int mode) {
+    static ExpressionTester<?, ?> tester(final TestCounter counter) {
         final Variable vx = new Variable("x");
         final Variable vy = new Variable("y");
         final Variable vz = new Variable("z");
 
         return new ExpressionTester<>(
-                counter, mode, KIND, c -> (x, y, z) -> c,
+                counter, KIND, c -> (x, y, z) -> c,
                 (op, a, b) -> (x, y, z) -> op.apply(a.evaluate(x, y, z), b.evaluate(x, y, z)),
                 Integer::sum, (a, b) -> a - b, (a, b) -> a * b, (a, b) -> a / b
         )

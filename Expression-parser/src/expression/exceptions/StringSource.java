@@ -1,8 +1,5 @@
 package expression.exceptions;
 
-/**
- * @author Georgiy Korneev (kgeorgiy@kgeorgiy.info)
- */
 public class StringSource implements CharSource {
     private final String data;
     private int pos;
@@ -27,11 +24,20 @@ public class StringSource implements CharSource {
     }
 
     @Override
+    public char changePos(int shift) {
+        pos += shift;
+        if (pos < 0 || pos > data.length()) {
+            throw new Error("Wrong shift: StringSource.java");
+        }
+        return data.charAt(pos - 1);
+    }
+
+    @Override
     public IllegalArgumentException error(final String message) {
         return new IllegalArgumentException(pos + ": " + message);
     }
 
     public void print() {
-        System.out.println(data);
+        System.out.println(data + " " +  pos);
     }
 }

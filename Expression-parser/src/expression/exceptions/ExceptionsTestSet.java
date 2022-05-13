@@ -1,9 +1,9 @@
 package expression.exceptions;
 
+import base.Functional;
 import expression.ToMiniString;
 import expression.TripleExpression;
 import expression.Variable;
-import expression.common.BaseTester;
 import expression.common.Op;
 import expression.parser.ParserTestSet;
 
@@ -23,13 +23,13 @@ public class ExceptionsTestSet<E extends ToMiniString, C> extends ParserTestSet<
     private static final Variable VY = new Variable("y");
 
     static {
-        BaseTester.addRange(OVERFLOW_VALUES, D, Integer.MIN_VALUE + D);
-        BaseTester.addRange(OVERFLOW_VALUES, D, Integer.MIN_VALUE / 2);
-        BaseTester.addRange(OVERFLOW_VALUES, D, (int) -Math.sqrt(Integer.MAX_VALUE));
-        BaseTester.addRange(OVERFLOW_VALUES, D, 0);
-        BaseTester.addRange(OVERFLOW_VALUES, D, (int) Math.sqrt(Integer.MAX_VALUE));
-        BaseTester.addRange(OVERFLOW_VALUES, D, Integer.MAX_VALUE / 2);
-        BaseTester.addRange(OVERFLOW_VALUES, D, Integer.MAX_VALUE - D);
+        Functional.addRange(OVERFLOW_VALUES, D, Integer.MIN_VALUE + D);
+        Functional.addRange(OVERFLOW_VALUES, D, Integer.MIN_VALUE / 2);
+        Functional.addRange(OVERFLOW_VALUES, D, (int) -Math.sqrt(Integer.MAX_VALUE));
+        Functional.addRange(OVERFLOW_VALUES, D, 0);
+        Functional.addRange(OVERFLOW_VALUES, D, (int) Math.sqrt(Integer.MAX_VALUE));
+        Functional.addRange(OVERFLOW_VALUES, D, Integer.MAX_VALUE / 2);
+        Functional.addRange(OVERFLOW_VALUES, D, Integer.MAX_VALUE - D);
     }
 
     private final List<Op<String>> parsingTest;
@@ -90,7 +90,7 @@ public class ExceptionsTestSet<E extends ToMiniString, C> extends ParserTestSet<
         if (expr.length() > 10) {
             for (final char ch : CHARS) {
                 for (int i = 0; i < 10; i++) {
-                    final int index = 1 + tester.getRandom().nextInt(expr.length() - 2);
+                    final int index = 1 + tester.random().nextInt(expr.length() - 2);
                     int pi = index - 1;
                     while (Character.isWhitespace(expr.charAt(pi))) {
                         pi--;

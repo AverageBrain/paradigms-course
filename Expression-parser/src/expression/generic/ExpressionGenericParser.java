@@ -1,35 +1,34 @@
-package expression.exceptions;
+package expression.generic;
 
-import expression.*;
-import expression.generic.evaluate.*;
+import expression.generic.classes.*;
+import expression.exceptions.*;
 
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.concurrent.Flow;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
-public class ExpressionParser implements TripleParser {
+public class ExpressionGenericParser<T extends Number> implements GenericParser<T> {
     @Override
-    public PartOfExpression parse(final String expression) {
+    public PartOfExpression<T> parse(final String expression) {
         return parse(new StringSource(expression));
     }
 
-    public PartOfExpression parse(CharSource expression) {
+    public PartOfExpression<T> parse(CharSource expression) {
         return new ParserExpression(expression).parseExpression();
     }
 
-    private static class ParserExpression extends BaseParser {
+    private class ParserExpression extends BaseParser {
         private int bal = 0;
 
         public ParserExpression(final CharSource source) {
             super(source);
         }
 
-        public PartOfExpression parseExpression() {
+        public PartOfExpression<T> parseExpression() {
             skipWhitespace();
-            final PartOfExpression result = parseValue();
+            final PartOfExpression<T> result = parseValue();
             skipWhitespace();
             if (eof()) {
                 return result;
@@ -54,8 +53,8 @@ public class ExpressionParser implements TripleParser {
             }
         }
 
-        private PartOfExpression parseValue() {
-            PartOfExpression curExpr = parsePrior(-1);
+        private PartOfExpression<T> parseValue() {
+            PartOfExpression<T> curExpr = parsePrior(-1);
             if (!testEOF()) {
                 throw error("program failed");
             }
@@ -69,15 +68,12 @@ public class ExpressionParser implements TripleParser {
         }
 
         Map<String, Integer> PRIORS = Map.of(
-                "<<", 0,
-                ">>", 0,
-                ">>>", 0,
+                "min", 0,
+                "max", 0,
                 "+", 1,
                 "-", 1,
                 "*",2,
-                "/", 2,
-                "//", 3,
-                "**", 3
+                "/", 2
         );
 
         ArrayList<Map.Entry<String, Integer>> OPERATIONS = new ArrayList<>(PRIORS.entrySet());
@@ -94,8 +90,8 @@ public class ExpressionParser implements TripleParser {
             throw new ParsingException("Unknown token");
         }
 
-        private PartOfExpression parsePrior(int curPrior) {
-            List<PartOfExpression> curExpr = new ArrayList<>();
+        private PartOfExpression<T> parsePrior(int curPrior) {
+            List<PartOfExpression<T>> curExpr = new ArrayList<>();
             boolean isFirst = true;
             while (true) {
                 skipWhitespace();
@@ -114,17 +110,20 @@ public class ExpressionParser implements TripleParser {
                     curExpr.add(parseConst(false));
                 } else if (between('x', 'z')) {
                     curExpr.add(parseVariable());
+                } else if (take('c')) {
+                    expect("ount");
+                    curExpr.add(new Count<T>(parseUnaryOperation()));
                 } else if (take('a')) {
                     expect("bs");
                     checkAbs();
-                    curExpr.add(new CheckedAbs(parseUnaryOperation()));
+                    curExpr.add(new Abs<T>(parseUnaryOperation()));
                 } else if (test('-')) {
                     if (isFirst) {
                         take();
                         if (between('0', '9')) {
                             curExpr.add(parseConst(true));
                         } else {
-                            curExpr.add(new CheckedNegate(parseUnaryOperation()));
+                            curExpr.add(new Negate(parseUnaryOperation()));
                         }
                     } else {
                         if (curPrior < PRIORS.get("-")) {
@@ -154,23 +153,26 @@ public class ExpressionParser implements TripleParser {
             return curExpr.get(0);
         }
 
-        private PartOfExpression parseUnaryOperation()  {
+        private PartOfExpression<T> parseUnaryOperation()  {
             skipWhitespace();
             if (take('(')) {
                 bal++;
-                PartOfExpression t = parsePrior(-1);
+                PartOfExpression<T> t = parsePrior(-1);
                 checkClosingBracket();
                 return t;
             } else if (take('-')) {
                 if (between('0', '9')) {
                     return parseConst(true);
                 } else {
-                    return new CheckedNegate(parseUnaryOperation());
+                    return new Negate<T>(parseUnaryOperation());
                 }
+            } else if (take('c')) {
+                expect("ount");
+                return new Count<T>(parseUnaryOperation());
             } else if (take('a')) {
                 expect("bs");
                 checkAbs();
-                return new CheckedAbs(parseUnaryOperation());
+                return new Abs<T>(parseUnaryOperation());
             } else if (between('0', '9')) {
                 return parseConst(false);
             } else if (between('x', 'z')) {
@@ -183,15 +185,19 @@ public class ExpressionParser implements TripleParser {
             }
         }
 
-        private PartOfExpression parseVariable() {
-            if (between('x', 'z')) {
-                return new Variable(Character.toString(take()));
+        private PartOfExpression<T> parseVariable() {
+            if (take('x')) {
+                return new Variable<T>("x");
+            } else if (take('y')) {
+                return new Variable<T>("y");
+            } else if (take('z')) {
+                return new Variable<T>("z");
             } else {
-                throw error("Wrong name by variable");
+                throw error("program failed");
             }
         }
 
-        private PartOfExpression parseConst(boolean isNeg) {
+        private PartOfExpression<T> parseConst(boolean isNeg) {
             try {
                 StringBuilder res = new StringBuilder("");
                 if (isNeg) {
@@ -203,7 +209,7 @@ public class ExpressionParser implements TripleParser {
                 if (res.length() == 1 && res.charAt(0) == '-') {
                     throw new ParsingException("Incorrect const symbol");
                 }
-                return new Const(Integer.parseInt(String.valueOf(res)));
+                return new Const<T>(String.valueOf(res));
             } catch (NumberFormatException e) {
                 throw new ParsingException("ConstOverflowException");
             }
@@ -215,21 +221,18 @@ public class ExpressionParser implements TripleParser {
             }
         }
 
-        private void addBinOper(List<PartOfExpression> curExpr, String sign) {
+        private void addBinOper(List<PartOfExpression<T>> curExpr, String sign) {
             if (curExpr.size() == 0) {
                 throw new ParsingException("missing first argument");
             }
-            BiFunction<PartOfExpression, PartOfExpression, PartOfExpression> expr;
+            BiFunction<PartOfExpression<T>, PartOfExpression<T>, PartOfExpression<T>> expr;
             switch (sign) {
-                case "+" -> expr = CheckedAdd::new;
-                case "-" -> expr = CheckedSubtract::new;
-                case "*" -> expr = CheckedMultiply::new;
-                case "/" -> expr = CheckedDivide::new;
-                case "//" -> expr = CheckedLog::new;
-                case "**" -> expr = CheckedPow::new;
-                case ">>>" -> expr = CheckedShiftA::new;
-                case ">>" -> expr = CheckedShiftR::new;
-                case "<<" -> expr = CheckedShiftL::new;
+                case "+" -> expr = Add<T>::new;
+                case "-" -> expr = Subtract<T>::new;
+                case "*" -> expr = Multiply<T>::new;
+                case "/" -> expr = Divide<T>::new;
+                case "min" -> expr = Min<T>::new;
+                case "max" -> expr = Max<T>::new;
                 default -> throw new IllegalArgumentException("Program works wrong");
             }
             curExpr.add(expr.apply(

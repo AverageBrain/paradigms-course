@@ -1,5 +1,7 @@
 package expression.exceptions;
 
+import java.security.spec.RSAOtherPrimeInfo;
+
 public class BaseParser {
     private static final char END = '\0';
     private final CharSource source;
@@ -33,6 +35,18 @@ public class BaseParser {
             return true;
         }
         return false;
+    }
+
+    protected boolean test(final String expected) {
+        StringBuilder cur = new StringBuilder();
+        int cnt = 0;
+        while (source.hasNext() && cnt < expected.length()) {
+            cur.append(ch);
+            ch = source.next();
+            cnt++;
+        }
+        ch = source.changePos(-cnt);
+        return cur.toString().equals(expected);
     }
 
     protected boolean test(final char expected) {
